@@ -1,150 +1,292 @@
 import React, {useCallback, useMemo, useState} from 'react';
-import {createEditor, Transforms, Editor, Text} from 'slate'
-import { Slate, Editable, withReact } from 'slate-react'
-import styled from "styled-components";
+import {createEditor, Transforms, Editor, Text, Range} from 'slate'
+import { Slate,
+    useSelected,
+    useFocused,
+     withReact } from 'slate-react'
+import {ReactComponent as N } from '../N.svg'
+import {ReactComponent as Omega} from "../omega.svg";
+import {ReactComponent as Italic} from "../I.svg";
+import {ReactComponent as Sub} from "../sub.svg";
+import {ReactComponent as Image} from "../picture.svg";
+import {ReactComponent as Upper} from "../up.svg";
+import {ReactComponent as Down} from "../down.svg";
+import {ReactComponent as Video} from "../video-camera.svg";
+import {
+    Container,
+    EquationInput,
+    EquationInputContainer,
+    StyledEditable,
+    StyledParagraph,
+    Toolbar,
+    ToolbarButton
+} from './editor-styles';
+import MathJax from "react-mathjax2";
 const CustomEditor = {
     isBoldMarkActive(editor) {
         const [match] = Editor.nodes(editor, {
             match: n => n.bold === true,
             universal: true,
         })
-
         return !!match
     },
-    isCodeBlockActive(editor) {
+    isItalicMarkActive(editor) {
         const [match] = Editor.nodes(editor, {
-            match: n => n.type === 'code',
+            match: n => n.italic === true,
+            universal: true,
         })
-
         return !!match
+    },
+    isUnderlineActive(editor){
+        const [match] = Editor.nodes(editor, {
+            match: n => n.under === true,
+            universal: true,
+        });
+        return !!match;
+    },
+    isSupActive(editor){
+        const [match] = Editor.nodes(editor, {match: n => n.type === 'sup'});
+        return !!match;
+    },
+    isSubActive(editor){
+        const [match] = Editor.nodes(editor, {match: n => n.type === 'sub'});
+        return !!match;
     },
     toggleBoldMark(editor) {
         const isActive = CustomEditor.isBoldMarkActive(editor);
-        Transforms.setNodes(
-            editor,
-            { bold: isActive ? null : true },
-            { match: n => Text.isText(n), split: true }
-        )
+        if(isActive){
+            Editor.removeMark(editor, 'bold');
+        }else{
+            Editor.addMark(editor, 'bold', true);
+        }
     },
+    toggleItalicMark(editor) {
+        const isActive = CustomEditor.isItalicMarkActive(editor);
+        if(isActive){
+            Editor.removeMark(editor, 'italic');
+        }else{
+            Editor.addMark(editor, 'italic', true);
+        }
+    },
+    toggleSupMark(editor) {
+        const isActive = CustomEditor.isSupActive(editor);
+        if(isActive){
+            Editor.removeMark(editor, 'sup');
+        }else{
+            Editor.removeMark(editor, 'sub');
+            Editor.addMark(editor, 'sup', true);
+        }
+    },
+    toggleSubMark(editor){
+        const isActive = CustomEditor.isSubActive(editor);
+        if(isActive){
 
-    toggleCodeBlock(editor) {
-        const isActive = CustomEditor.isCodeBlockActive(editor);
-        Transforms.setNodes(
-            editor,
-            { type: isActive ? null : 'code' },
-            { match: n => Editor.isBlock(editor, n) }
-        )
+            Editor.removeMark(editor, 'sub');
+        }else{
+            Editor.removeMark(editor, 'sup');
+            Editor.addMark(editor, 'sub', true);
+        }
     },
+    toggleUnderlineMark(editor){
+        const isActive = CustomEditor.isUnderlineActive(editor);
+        if(isActive){
+            Editor.removeMark(editor, 'under');
+        }else{
+            Editor.addMark(editor, 'under', true);
+        }
+    }
 };
-const StyledEditable = styled(Editable)`
-    border: 2px solid #3FB1E2;
-    border-radius: 10px;
-    padding: 10px;
-    margin: 10px;
-`;
-const StyledParagraph = styled.p`
-    margin-top: 0.2em;
-`;
-const Toolbar = styled.div`
-    position: absolute;
-    right: 20px;
-    top: 2px;
-    border: 1px solid #3FB1E2;
-    background-color: #3FB1E2;
-    border-bottom: none;
-    border-radius: 10px 10px 0 0;
-`;
-const ToolbarButton = styled.button`
-    background-color: transparent;
-    border:none;
-    color: white;
-`
-const Container = styled.div`
-    position: relative;
-    padding-top: 10px;
-`;
+const withEquation = editor => {
+    const { isVoid } = editor
+
+    editor.isVoid = element => {
+        return element.type === 'equation' ? true : isVoid(element)
+    }
+
+    return editor
+};
+const insertEquation = (editor, equation) =>{
+    Transforms.insertNodes(editor, {
+        type: 'equation',
+        equation,
+        children: [{text: ''}]
+    });
+};
 export default function TextEditor(){
-    const editor = useMemo(()=> withReact(createEditor()), []);
+    const editor = useMemo(()=> withEquation(withReact(createEditor())), []);
     const [value, setValue] = useState([
         {
             type: 'paragraph',
-            children: [{ text: 'A line of text in a paragraph.' }],
+            children: [{text: ''}],
         },
     ]);
+    const [showInputEquation, setShowInputEquation] = useState(false);
     const renderElement = useCallback((props)=>{
         switch (props.element.type) {
-            case 'code':
-                return <CodeElement {...props} />
+            case 'equation':
+                return <EquationElement {...props} />
             default:
                 return <DefaultElement {...props} />
         }
     },[]);
+
     const renderLeaf = useCallback( (props)=> {
         return <Leaf {...props} />
     }, [])
     return (
-        <Container>
-            <Slate value={value} editor={editor} onChange={value => setValue(value)}>
-                <Toolbar>
-                    <ToolbarButton
-                        onMouseDown={event => {
-                            event.preventDefault()
-                            CustomEditor.toggleBoldMark(editor)
-                        }}
-                    >
-                        Bold
-                    </ToolbarButton>
-                    <ToolbarButton
-                        onMouseDown={event => {
-                            event.preventDefault()
-                            CustomEditor.toggleCodeBlock(editor)
-                        }}
-                    >
-                        Code Block
-                    </ToolbarButton>
-                </Toolbar>
-                <StyledEditable onKeyDown={event => {
-                    if(!event.ctrlKey) return;
-                    switch (event.key) {
-                        case '\'': {
-                            event.preventDefault();
-                            CustomEditor.toggleCodeBlock(editor);
-                            break;
-                        }
-                        case 'b':{
-                            event.preventDefault();
-                            CustomEditor.toggleBoldMark(editor);
-                            break;
-                        }
-                        default:
-                            return;
-                    }
+        <MathJax.Context
+            script='https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-MML-AM_SVG'
+            input='ascii' options={{
+            output: 'SVG',
+            asciimath2jax: {
 
-                }} renderElement={renderElement} renderLeaf={renderLeaf} />
+                useMathMLspacing: true,
+                delimiters: [["$$","$$"]],
+                preview: "none",
+            }}}
+        >
+            <Container>
+                <Slate value={value} editor={editor} onChange={value => { setValue(value); }}>
+                    <Toolbar>
+                        <ToolbarButton
+                            onMouseDown={event => {
+                                event.preventDefault()
+                                CustomEditor.toggleBoldMark(editor)
+                            }}
+                        >
+                            <N></N>
+                        </ToolbarButton>
+                        <ToolbarButton
+                            onMouseDown={event => {
+                                event.preventDefault()
+                                CustomEditor.toggleItalicMark(editor);
+                            }}
+                        >
+                            <Italic />
+                        </ToolbarButton>
+                        <ToolbarButton
+                            onMouseDown={event => {
+                                event.preventDefault();
+                                CustomEditor.toggleUnderlineMark(editor);
+                            }}
+                        >
+                            <Sub />
+                        </ToolbarButton>
+                        <ToolbarButton
+                            onMouseDown={event => {
+                                event.preventDefault()
+                                CustomEditor.toggleSubMark(editor);
 
-            </Slate>
-        </Container>
+                            }}
+                        >
+                            <Down />
+                        </ToolbarButton>
+                        <ToolbarButton
+                            onMouseDown={event => {
+                                event.preventDefault()
+                                CustomEditor.toggleSupMark(editor);
+                            }}
+                        >
+                            <Upper />
+                        </ToolbarButton>
+                        <ToolbarButton
+                            onMouseDown={event => {
+                                event.preventDefault();
+                                setShowInputEquation((prevState)=> !prevState);
+                                insertEquation(editor, '');
+                            }}
+                        >
+                            <Omega />
+                        </ToolbarButton>
+                        <ToolbarButton
+                            onMouseDown={event => {
+                                event.preventDefault()
+
+                            }}
+                        >
+                            <Image />
+                        </ToolbarButton>
+                        <ToolbarButton
+                            onMouseDown={event => {
+                                event.preventDefault()
+
+                            }}
+                        >
+                            <Video />
+                        </ToolbarButton>
+                    </Toolbar>
+                    <StyledEditable onKeyDown={event => {
+
+                        if(!event.ctrlKey) return;
+                        switch (event.key) {
+                            case 'b':{
+                                event.preventDefault();
+                                CustomEditor.toggleBoldMark(editor);
+                                break;
+                            }
+                            case 'i':
+                                event.preventDefault();
+                                CustomEditor.toggleItalicMark(editor);
+                                break;
+                            default:
+                                return;
+                        }
+
+                    }} renderElement={renderElement} renderLeaf={renderLeaf} />
+
+                </Slate>
+            </Container>
+        </MathJax.Context>
+
     );
 }
-const CodeElement = props => {
+const EquationElement = props=> {
     return (
-        <pre {...props.attributes}>
-            <code>{props.children}</code>
-        </pre>
+        <div {...props.attributes} >
+            <div contentEditable={false} style={{'display': 'inline-block'}}>
+                <MathJax.Node>{props.element.equation}</MathJax.Node>
+            </div>{props.children}
+        </div>
+
     )
-};
+}
 const DefaultElement = props => {
     return (
         <StyledParagraph {...props.attributes}>{props.children}</StyledParagraph>
     )
 };
+
 const Leaf = props => {
+    if(props.leaf.sub){
+        return (
+            <sub
+                {...props.attributes}
+                style={{ fontWeight: props.leaf.bold ? 'bold' : 'normal',
+                    fontStyle: props.leaf.italic ? 'italic': 'normal'}}
+                    >
+              {props.children}
+            </sub>
+        )
+    }else if(props.leaf.sup){
+        return (
+            <sup
+                {...props.attributes}
+                style={{ fontWeight: props.leaf.bold ? 'bold' : 'normal',
+                    fontStyle: props.leaf.italic ? 'italic': 'normal'}}>
+                {props.children}
+            </sup>
+        )
+    }
     return (
         <span
             {...props.attributes}
-            style={{ fontWeight: props.leaf.bold ? 'bold' : 'normal' }}
+            style={{ fontWeight: props.leaf.bold ? 'bold' : 'normal',
+                fontStyle: props.leaf.italic ? 'italic': 'normal',
+                textDecoration: props.leaf.under ? 'underline': 'none'}}
+
         >
       {props.children}
     </span>
     )
+
 };

@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="25" height="30" viewBox="0 0 28.846 30">
+  <g id="picture" transform="translate(-8 -2)">
+    <g id="Grupo_217" data-name="Grupo 217" transform="translate(7 2)">
+      <path id="Caminho_23" data-name="Caminho 23" d="M11.644,19.426a3.213,3.213,0,1,0-3.213-3.213A3.216,3.216,0,0,0,11.644,19.426Z" transform="translate(-3.144 -5.5)" fill="#fff"/>
+      <path id="Caminho_24" data-name="Caminho 24" d="M1,0V30H29.846V0ZM2.154,1.154H28.692V17.1l-6.533-5.989a.592.592,0,0,0-.415-.151.578.578,0,0,0-.4.188l-4.825,5.284,2.2,2.2a.577.577,0,1,1-.816.816l-2.207-2.108L12.956,14.6a.577.577,0,0,0-.789-.025l-9.655,8.5H2.154ZM28.692,28.846H2.154V24.231H28.692Z" fill="#fff"/>
+    </g>
+  </g>
+</svg>
